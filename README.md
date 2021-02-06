@@ -1,7 +1,7 @@
 # real-estate-stats
 Statistical analysis on real estate, business and housing topics with focus in Philadelphia, PA
 
-![scatterplot graphs of property sale priced paid by LLC versus non-LLC buyers side by side comparison](ggplot FMV sidebyside Sales Price - Non-LLC Buyers-1.png)
+<img src="ggplot FMV sidebyside Sales Price - Non-LLC Buyers-1.png">
 
 Data sources include predominantly OpenDataPhilly datasets available through https://www.opendataphilly.org/
 Direct URL addresses for specific datasets used are in the R Markup file.

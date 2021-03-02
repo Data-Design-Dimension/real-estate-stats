@@ -1,7 +1,7 @@
 # Real Estate Statistics Analysis & Data Visualization
 Statistical analysis on real estate, business and housing topics with focus in Philadelphia, PA
 
-<img src="ggplot FMV sidebyside Sales Price - Non-LLC Buyers-1.png">
+<img src="Images/ggplot FMV sidebyside Sales Price - Non-LLC Buyers-1.png">
 
 Data sources include predominantly OpenDataPhilly datasets available through https://www.opendataphilly.org/
 

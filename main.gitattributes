@@ -7,6 +7,7 @@
 #
 # The above will handle all files NOT found below
 #
+*.* linguist-language=R
 
 # Documents
 *.bibtex   text diff=bibtex
@@ -41,10 +42,10 @@
 *.tiff     binary
 *.ico      binary
 # SVG treated as an asset (binary) by default.
-*.svg      text
+# *.svg      text
 # If you want to treat it as binary,
 # use the following line instead.
-# *.svg    binary
+*.svg    binary
 *.eps      binary
 
 # Scripts

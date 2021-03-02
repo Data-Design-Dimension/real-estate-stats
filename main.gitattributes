@@ -1,3 +1,5 @@
+*.* linguist-language=R
+
 # Common settings that generally should always be used with your language specific settings
 
 # Auto detect text files and perform LF normalization
@@ -7,7 +9,6 @@
 #
 # The above will handle all files NOT found below
 #
-*.* linguist-language=R
 
 # Documents
 *.bibtex   text diff=bibtex

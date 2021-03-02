@@ -1,5 +1,6 @@
 ---
 title: "Limited Liability Company Real Estate Owners in Philadelphia"
+subtitle: "A concise presentation of analysis"
 author: "Kathryn Hurchla"
 date: "December 15, 2020"
 output: slidy_presentation

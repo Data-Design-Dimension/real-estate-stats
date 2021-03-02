@@ -31,8 +31,7 @@
 *.tab      text
 *.tsv      text
 *.txt      text
-# modified to retain treatment of SQL files as code
-# *.sql      text
+*.sql      text
 
 # Graphics
 *.png      binary

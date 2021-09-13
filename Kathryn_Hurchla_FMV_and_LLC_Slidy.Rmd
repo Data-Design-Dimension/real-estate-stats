@@ -1,0 +1,823 @@
+---
+title: "Limited Liability Company Real Estate Owners in Philadelphia"
+subtitle: "A presentation of step by step analysis"
+author: "Kathryn Hurchla"
+date: "December 15, 2020"
+output: slidy_presentation
+---
+
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, error = FALSE)
+
+#  load library("slidy") # not available for this version of R
+library(markdown)
+
+```
+
+```{r alternate rendering to knits button in R Studio}
+
+library("knitr")
+
+# knit2html(  # Error: It seems you should call rmarkdown::render() instead of knitr::knit2html() because Kathryn_Hurchla_final_project_RE_LLC_Slidy.Rmd appears to be an R Markdown v2 document.(surprised because my RStudio version when I ran this was 1.3.1093)
+rmarkdown::render(
+  "Kathryn_Hurchla_final_project_RE_LLC_Slidy.Rmd",
+  output_format = 'slidy_presentation')
+
+```
+
+**bold**
+
+## Introduction
+
+Introduction: Although Pennsylvania is not one of the seven US states which offer the establishment of a unique kind of Series LLC, many real estate investors and entrepreneurs use a similar multi-level LLC ownership structure for asset protection, where multiple LLC act as Subsidiaries of a primary holding or operating LLC. 
+
+In Pennsylvania, an LLC or other business organization may have ownership of another LLC. Thereby the circumstance for multi-level LLC structures may be registered with the state which is the governing body for business organization. Project focuses on PA organization and Philadelphia Real Estate records.
+
+Objectives
+
+1. Measure to what degree the perceived asset protection is demonstrated as real by analyzing public data available.
+   Test a hypothesis that an LLC is less likely to incur a claim of negligence than an individual property owner.
+
+2. Test a hypothesis that an LLC, as a property buyer, is more likely to pay below market value, i.e. market rate, as compared to another type of buyer such as an individual or non-LLC partnership.
+
+---
+**bold**
+
+## Questions
+
+Does PA legal case history show that this organization does deter cases of litigation against these property owners, or when litigation does occur, does the perceived protection hold up to separate and thereby protect other assets including real estate held by other LLC in the multi-level structure?. Have assets beyond the direct singular first degree property LLC been impacted, i.e. has PA law upheld the perceived asset protection of multi-level LLC ownership?
+
+# Exploratory Data Analysis (EDA)
+
+1a. [x] Q: How many LLC own one or more real estate property? (Using LLC business codes; deeds; FEIN, OPA)
+        A: 96,508 deeds transferred Philadelphia property to LLC ownership from 1999 to and including 2020.  
+1b. [-] Q: How many LLC own or more other LLC where either meets 1a above (owns real estate).
+        A: Data not available for LLC organization ownership
+2a. [?] Q: Summarize ownership counts by range of properties owned; frequencies 
+        A: Multiple owner entities can appear in Grantee field separated by "; ". I tried including a 'Matched field' column as part of running the LLC search function, but encountered errors I could not resolve.
+2b. [?] Q: Summarize by NAICS Industry business codes (i.e. primary focus on one of real estate codes or other business focus which just also owns property, either its address or investment)
+        A: Will require additional dataset, potentiall in the Licenses & Inspection Commercial Activity License. Althouth this is collected when registering an LLC or other organization type, it's not available in structured             dataset publicly.
+3.  [?] Q: Compare to similar summary (count) ranges by other entity type owners (individuals, LLP, Corp, etc)
+        A: Having trouble handling NA values with covariance function; result is NA.
+4.  [?] Q: How many LLC owned properties also have a mortgage deed attached to them? 
+        A: deferred
+        
+# Objective 1 Questions
+
+5.  [?] Cross reference court records or liability insurance payouts if possible for claims or lawsuits, e.g. slip and fall incidents, and results if possible.
+        The data need to be scraped one page at a time manually unless I could get Apache Tomcat to run the Java applet their search used in search.do. Manually I will only be able to grab some hundreds of filtered %LLC records (which still go up to 10,000)
+        Q: How many LLC owning a single property with a designated real estate NAICS code are defendents for claims?
+        A: 
+        Q: How many LLC owning multiple property are defendents for claims? (regarless of NAICS code or with or without real estate code)
+        A: 
+        Q: How many individuals owning multiple property are defendents for claims? (to the extent matching is possible)
+        A: 
+        Q: Is the rate of claim higher or lower for LLC designated to own only a single property?
+        A: 
+        Q: Is it possible to match the parent LLC in a multi-level LLC as a D2 (defendent 2) together with a Subsidiary LLC as D1 in a single claim?
+        A:
+
+# Objective 2 Questions
+Stretch goal/if other questions cannot be answered: 
+6a. [x] Calculate Market Value - The existing FMV was used, with the absense of square footage variable to calculate
+
+6b. [?] Calculate a LTV loan to value percentage ratio and create its function. May need to use sale price or value in deed transaction for "value" if another value is not accessible.
+
+7.  [?] Q: Test Hypothesis: An LLC property buyer is more likely to pay below market value as compared to another type of buyer such as an individual or non-LLC partnership.
+        A: Is the null proved?
+## Environment
+
+```{r install and load packages}
+
+getwd()
+
+library(filesstrings)
+library(DBI)
+library(tidyverse)
+library(stringr)
+library(readr)
+library(dplyr)
+library(modelr)
+library(ggplot2)
+library(scales)
+library(gridExtra)
+library(gridExtra)
+library(grid)
+library(rmarkdown)
+library(odbc)
+library(scales)
+
+```
+---
+**bold**
+
+## First Establish LLC Criteria
+
+We can use a single definition and search across multiple datasets as needed.
+
+Colorado's dept of state had a clear list of entity name designators which were only alluded to briefly on PA's forms and website: https://www.sos.state.co.us/pubs/business/helpFiles/designators.html
+Another helpful reference for designators in each state was https://companiesinc.com/start-a-business/corporation/corporation-llc-fictitious-name-requirements/
+
+# Challenges with overlapping designators
+Designator "Ltd" "Limited" may pick up some LLP or LLLP orgs also, but is included to expand to all LLC results. Company may be used as a generic term by some non-LLC orgs, but Company is specifically listed as a legal designator for LLC in PA on its entity certification forms.
+
+``` {r LLC Identification}
+
+## Create a function to identify LLC entities in any dataset where there is a name field to be entered for entity_name.
+LLC_identifier <- function(entity_name) {
+  # Create a variable for all the potential LLC designators because we may need to repeat a similar name pattern match in other data set searches.
+  # Added POSIX locale interpretation for "." period punctuation using the [:.:] notation to filter out appearance of "co" without "co.", i.e. in the middle of individuals's names. 
+  # Required because punctuation are a predefined character class so "." was being ignored in pattern search. This forces it to be absolutely searched as a character. 
+  # Another consideration is to look for " co " with spaces before and after or space before and end of value.
+  # Spaces were also interpreted using the [: :] notation where the abbreviated forms were being matched within unrelated words, e.g. Mrs. Wolp inspead of , LP.
+  LLC_designator <- c("[: :]llc", "[: :]lc", "[: :]l[:.:]c[:.:]","limited liability company", "limited", "company", "[: :]co[:.:]", "[: :]l[:.:]l[:.:]c[:.:]", "[: :]ltd[:.:][: :]liability company", "[: :]ltd[: :]liability company", "[: :]ltd[:.:] liability co[:.:]", "[: :]ltd[: :]liability co[:.:]", "[: :]ltd", "professional company", "[: :]p[:.:]l[:.:]l[:.:]c[:.:]", "[: :]pllc", "[: :]l[: :]l[: :]c")
+
+  # Create a variable for all the potential Partnership entity types, e.g. LLP, LLLP, LP, which may contain overlapping designators; for exclusion form LLC table.
+  # Distinct from IRS filing Partnership status, which as LLC may have under some circumstances
+  Partnership_designator <- c("[: :]llp", "[: :]lllp", "[: :]lp", "limited liability partner", "[: :]l[:.:]l[:.:]p[:.:]", "[: :]ltd[:.:] liability partner", "[: :]ltd[: :]liability partner", "[: :]l[:.:]l[:.:]l[:.:]p[:.:]", "[: :]l[:.:]p[:.:]", "[: :]r[:.:]l[:.:]l[:.:]p[:.:]", "[: :]rllp", "limited liability limited partnership", "limited partnership", "[: :]ltd[: :]partner", "[: :]ltd[:.:][: :]partner", "[: :]l[: :]l[: :]p", "[: :]l[: :]p")
+  
+  # Create a variable for Corporation designator to filter out
+  Corp_designator <- c("corporation", "[: :]corp", "[: :]inc", "incorporated", "[: :]inc[:.:]")
+  
+  grepl(paste(LLC_designator, collapse = "|"),
+                          entity_name, ignore.case = TRUE) &
+    !grepl(paste(Partnership_designator, collapse = "|"),
+                          entity_name, ignore.case = TRUE) &
+    !grepl(paste(Corp_designator, collapse = "|"),
+                          entity_name, ignore.case = TRUE)
+}
+```
+
+---
+**bold**
+
+## Data
+
+Public data which is available through Open Data Philly and state or city judicial repositories will be used. CSV or HTML files are available, and due to the large size of some of these datasets, I may attempt to access them through the API available if time permits. I compiled judicial data search results into structured file formats for analysis.
+
+### LLC ownership of other LLC
+
+Although ownership is collected upon registration in a structured way, there does not seem to be a dataset containing Owner Names available, nor are the certification attachments available that may contain partial ownership information. Only a push search web application is available to search by known owner name one by one for this unfortunately, where I may be able to run a wildcard search as with deeds and claims.
+
+Possibly I could try to tie them through address matching from datasets below.
+Currently it requires a Right to Know public access request to find out the owners listed on a LLC's certificate of organization records with the State of PA.
+LLC ownership is not generally found publicly because of the limited financial reporting required of this organization structure, e.g. by the IRS which only requires certain public filings by certain tax entities, such as not for profit organizations or corporations meeting certain stock/securities criteria. Therefore tax and financial reports are not publicly accessible for the majority of LLC orgs.
+
+```{r LLC Subsidiary LLC Ownership}
+
+# Commenting out code because I was unable to source data on LLC Ownership
+# Use source() or read_csv()
+
+# Write file to a named variable
+# LLC <-
+  
+# summary(LLC)
+
+# Identify and name organizations which are a Parent Company LLC
+# LLC_parent <- 
+
+# summary(LLC_parent)
+
+# Identify and name organizations which are a Subsidiary LLC of another Parent Company LLC
+# LLC_subsidiary <- 
+  
+# summary(LLC_subsidiary)
+
+```
+
+### Real Estate ownership by LLC
+
+Deed transactions 1999+ are included in table form
+https://www.opendataphilly.org/dataset/real-estate-transfers
+where grantors or grantees contains LLC (which is required as part of legal name on contracts)
+Entity type "Limited Liability Corporation" is not in this dataset but appears in some other city records, so is either linked from another source or is calculated in some website form views. There is a Google group and metadata documentation for questions with opendataphilly datasets.
+
+Filter out mortgage or other unrelated document type transactions (use separately for alternate analysis of LTV). This filtering was done at the API call level with the SQL code to source only Deed Type = "DEED".
+In Pennsylvania, the legal name of an LLC is required to contain a designator e.g., “company,” “limited” or “limited liability company” or any abbreviation thereof such as "LLC", "L.L.C", so I can identify owners by this assuming they have listed their full legal LLC org name in title transfer of real estate, i.e. and not a Dba doing business as name or truncating that ending for general use purposes. Such designators generally appear at the end of LLC org names which may simplify the character search.
+
+May be able to get some or all of the Legal Entity Type (LLC) by linking with this dataset, although I would prefer to use articles or LLC incorporation registration as more complete set over this which is Commercial Activity License data (An legit LLC in Philadelphia requires both under most circumstances)
+https://www.opendataphilly.org/dataset/licenses-and-inspections-commercial-activity-licenses
+LEGALENTITYTYPE
+REVENUECODE field will indicate one of a variety of related real estate business codes (although any LLC may own real estate)
+
+In order to source this very large dataset using an API, I queried it outside R Markdown through HTTPS via Carto's SQL API, passing SQL queries as the q parameter (PostgreSQL). 
+Note also these files exceed the maximum 25MB size for hosting in my GitHub repository; from the API pull I wrote the file to my local machine for analysis. 
+
+You are recommended to repeat the SQL code to download your own file for analysis with the subsequent R scripts. Move it to a "data" folder in your working directory, i.e. "data/RTT_Summary_Deeds.csv" (I'm inserting R code you may use to do this step below).
+For reference Google Chrome omnibox address bar was used to access API. No API Key is required using this public connection for only read access to the data.
+Alternately, you may try using the R dplyr function read_csv() directly with the connection script beginning with https below in place of the file argument (I opted not to do so because documentation states that R automatically downloads file regardless with files starting with http://, https://, ftp://, or ftps://)--Let me know how it goes if you try.
+
+
+```{r PosgreSQL connection}
+# Install the latest odbc release from CRAN:
+#install.packages("odbc")
+
+# Or the the development version from GitHub:
+# install.packages(devtools)
+#devtools::install_github("rstats-db/odbc")
+
+con <- DBI::dbConnect(odbc::odbc(),
+  driver = "PostgreSQL Driver",
+  database = "Postgre",
+  UID    = rstudioapi::askForPassword("Database user"),
+  PWD    = rstudioapi::askForPassword("Database password"),
+  host = "localhost",
+  port = 5432)
+
+odbc::odbcListDrivers()
+knit_engines$set()
+
+odbc::odbcListDataSources()
+
+```
+
+```{SQL access deeds from Carto API}
+
+## Postgre SQL
+# Test API connection by running a simple query to view count of all observations in your browser window:
+https://phl.carto.com/api/v2/sql?q=SELECT count(*) FROM RTT_SUMMARY
+
+## Query and output CSV files by date range, e.g. from 2017-2028 below.
+# This worked but the large size of some of the date ranges such as 2016-2017 and 2018-2019 which incurred problems downloading the files during the middle of the day:
+# https://phl.carto.com/api/v2/sql?filename=RTT_SUMMARY&format=csv&skipfields=cartodb_id,the_geom,the_geom_webmercator&q=SELECT%20*,%20ST_Y(the_geom)%20AS%20lat,%20ST_X(the_geom)%20AS%20lng%20FROM%20RTT_SUMMARY%20WHERE%20display_date%20%3E=%20%272018-01-01%27%20AND%20display_date%20%3C%20%272020-01-01%27
+
+
+## More effectively, I pulled only the deeds, and output it to a single CSV file as RTT_Summary_Deeds to be named a variable as 'deeds'; 
+# this filtering limited the size of the file which also allowed me to include most of the variables as columns to explore.
+
+# https://phl.carto.com/api/v2/sql?filename=RTT_SUMMARY&format=csv&skipfields=cartodb_id,the_geom,the_geom_webmercator&q=SELECT *, ST_Y(the_geom) AS lat, ST_X(the_geom) AS lng FROM RTT_SUMMARY WHERE document_type = 'DEED'
+https://phl.carto.com/api/v2/sql?filename=RTT_SUMMARY&format=csv&skipfields=cartodb_id,the_geom,the_geom_webmercator&q=SELECT%20*,%20ST_Y(the_geom)%20AS%20lat,%20ST_X(the_geom)%20AS%20lng%20FROM%20RTT_SUMMARY%20WHERE%20document_type%20=%20'DEED'
+
+# When attempting to directly filter for LLC ownership through the API connection, I was receiving an error at the like wildcard operator when running the LLC criteria in HTTPS.
+# {"error":["syntax error at or near \"%\""]}
+# https://phl.carto.com/api/v2/sql?q=SELECT document_id, display_date, zip_code, grantors, grantees, recording_date, opa_account_num, property_count FROM RTT_SUMMARY WHERE document_type = 'DEED' AND grantees NOT LIKE '%LLC%'
+# https://phl.carto.com/api/v2/sql?filename=deeds_llc.csv&q=SELECT document_id, display_date, zip_code, grantors, grantees, recording_date, opa_account_num, property_count FROM RTT_SUMMARY WHERE document_type = 'DEED' AND grantees LIKE "'%LLC%'"
+
+```
+
+Once the data is sourced, it can be pulled into R to establish a variable dataset.
+
+```{r move file and name deeds}
+
+## Move the file from your default Downloads folder to your working directory.
+# First make sure you've installed and loaded the filestrings package (included in prep environment overall packages listing above)
+
+?dir.create
+?file.move
+
+# For Mac:
+dir.create("data")
+file.move("~/Downloads/RTT_Summary_Deeds.csv", "data/RTT_Summary_Deeds.csv") 
+# For Windows:
+# dir.create("data")
+# file.move("%userprofile%\Downloads\RTT_Summary_Deeds.csv", "data\RTT_Summary_Deeds.csv") 
+
+# move the file. Insert your own working directory
+
+## All deeds in the date range for any grantee entity types 
+??read_csv
+
+deeds <- read_csv("data/RTT_Summary_Deeds.csv", na = ".")
+
+summary(deeds)
+problems(deeds) # Problem is $street_postdir containing 'E" for East, "W" for West, etc. and does not indicate a real problem I can tell; chr data type. I think because it's a single character variable in all values, R expected a boolean true/false or 1,0 and perhaps it's because the readr package functions can automatically assign data types.
+spec(deeds)
+
+?glimpse
+glimpse(deeds)
+
+```
+
+## Visualize Deed Transfer Activity
+
+Take a look at all of the deed transfers in scatter plots by zip code.
+
+Cash Consideration is used as Sale Price because there are a limited number of NA's for this base price variable, whereas the number of missing values increased considerably with the adjusted or total consideration variable, which may tay taxes into account but more often the price is what is available on most records. Limiting the frequency of missing values also makes the chart far more readable.
+
+```{r plot deeds by zip, echo=FALSE, fig.height=8, fig.width=14}
+
+# Note that in Plots the echo equals FALSE parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+?dollar
+
+# scatterplots faceted
+ggplot(data = deeds) +
+  geom_point(mapping = aes(x = recording_date, y = cash_consideration)) +
+  facet_wrap(~ zip_code, nrow = 5) +
+  ggtitle("Philadelphia Real Estate Sale Prices by Zip Code") +
+  xlab("Year") +
+  # Dollar
+  scale_y_continuous(name = "Sale Price", labels = dollar) + 
+  theme(
+  axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+
+```
+
+## 19121 Deep Dive
+
+Let's take a closer look at a single zip code.
+First some quick statistics
+
+```{r summary_19121}
+# How do the Median Prices compare for all sales, and where an LLC is the buyer of the property?
+# This was returning repeated "longer object length is not a multiple of shorter object length" error with LLC_identifier embedded, so I'll create a subset of LLC data first.
+# deeds %>%
+#   group_by(zip_code) %>%
+#   summarise(median_price = median((cash_consideration / property_count), na.rm = TRUE),
+#             # where grantee aka buyer is LLC
+#             median_price_LLC_Buyer = median((cash_consideration[LLC_identifier(grantees)] / property_count), na.rm = TRUE),
+#             # where grantor aka seller is LLC
+#             median_price_LLC_Seller = median((cash_consideration[LLC_identifier(grantors)] / property_count), na.rm = TRUE))
+
+# This has previously worked when I had left off the calculations for property_count, so it returned results results per deed (which may include multiple properties)
+# The error is now being returned though using multiple groups with summarise(), "`summarise()` ungrouping output (override with `.groups` argument)"
+# I've tried adding a .groups = 'keep' but this doesn't seem to remove the error, and the table is no longer appearing as a result
+# commented out; requires more debugging
+# deeds %>%
+#   group_by(zip_code, grantees_entity_type) %>%
+#   summarise(median_price = median(cash_consideration, na.rm = TRUE, .groups = 'keep'),
+#            # where grantee aka buyer is LLC
+#              median_price_LLC_Buyer = median(cash_consideration[LLC_identifier(grantees)], na.rm = TRUE, .groups = 'keep'),
+#            # where grantor aka seller is LLC
+#             median_price_LLC_Seller = median(cash_consideration[LLC_identifier(grantors)], na.rm = TRUE, .groups = 'keep'))
+
+```
+
+```{r FMV and Sale Price calculated values variables}
+
+# First let's collapse our per property calculations into named variables adjusted for our analysis.
+
+# mutate runs and shows result, but I'm not seeing it in the variable list columns. Remember that mutate() – like all of the dplyr functions – strictly operates on dataframes. It’s not set up to work with lists, matrices, vectors, or other data structures.
+# mutate(deeds, calc_sales_price = deeds$cash_consideration / deeds$property_count)
+deeds$calc_sales_price <- deeds$cash_consideration / deeds$property_count
+# mutate(deeds, calc_FMV = deeds$fair_market_value / deeds$property_count)
+deeds$calc_FMV <- deeds$fair_market_value / deeds$property_count
+
+```
+
+```{r assign values and EDA}
+
+# Apply filter using LLC_identifier function to deeds
+deeds_LLC <- filter(deeds,
+                    LLC_identifier(deeds$grantees))
+
+
+summary(deeds_LLC)
+glimpse(deeds_LLC)
+
+# See just a list of the grantees to validate the LLC filter results.
+list(deeds_LLC$grantees)
+
+# Add a column to Deeds to append LLC Ownership; to allow for showing a table view of filtered columns within one data table (as alternative to applying LLC_identifier within script repeatedly).
+deeds$grantees_entity_type <- LLC_identifier(deeds$grantees)
+
+# rewrite it with subsets; still requires debugging, maybe try mutate() to add each mean, median as column
+# deeds.table_19121 <- deeds %>%
+#   group_by(zip_code, grantees_entity_type) %>%
+#   summarise(median((cash_consideration / property_count), na.rm = TRUE),
+#           mean((cash_consideration / property_count), na.rm = TRUE)
+#           )
+
+
+# Note the $10 median price in 19108; this is a city block zip code with 0 population what contains Netrality Data Centers/ Sungard Availability Services
+# Similarly, 19109 is a single city block containing several large office buildings in Center City and which is over a SEPTA subway transit concourse area.
+
+# Now look only at 19121 in lower North Philadelphia; incl. Strawberry Mansion, Brewerytown, Francisville neighborhood areas.
+
+deeds_19121 <- filter(deeds, zip_code == "19121") 
+summary(deeds_19121)
+
+glimpse(deeds_19121)
+median(deeds_19121$cash_consideration / deeds_19121$property_count, na.rm = TRUE) # median price in 19121 with 7 nulls removed is $10,000
+# 5,870 LLC buyers deeds, and 15,576 other entity type buyers deeds in 19121
+```
+
+# Plot Sales History in 19121
+
+```{r deeds_19121, echo=FALSE}
+
+# scatterplot for single zip code with smooth line
+
+deeds %>%
+  filter(zip_code == "19121") %>%
+  ggplot(aes(x = recording_date, y = cash_consideration / property_count)) +
+  geom_point(alpha = 0.3, position = position_jitter(), nrow = 5) +
+  stat_smooth(method = "lm") +
+  ggtitle("Lower North Philadelphia Real Estate Sales Prices in Zip Code 19121") +
+  xlab("Year") +
+  # Dollar
+  scale_y_continuous(name = "Sale Price", labels = dollar) + 
+  theme(
+  axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+
+```
+
+
+### Litigation 
+
+The common liability risk of property ownership is the notorious slip and fall claim of negligence, more officially known as "Premise Liability". Not limited to rental tenants, anyone walking on the sidewalk in front of a city property can claim negligence. It is generally reported that most slip or trip and fall accident cases of negligence are settled out of court and with insurance agencies acting on behalf of LLC/property owners. As a property owner myself, I personally can share that I have settled a slip and fall incident out of court due to the expense and time that defending in court would require, so I do believe this generalization to be valid.
+Legal settlements data are not public record however, although it has been argued widely that they should be for public transparency.
+
+Legal cases decided by a judge or jury do become public record however, which could contain a limited number of relevent records.
+I attempted to source enough civil lawsuit cases to analyze liability, identifying e.g. fines, costs and restitutions.
+Unfortunately however, I've found that there is no organized data structure this is available in, and it is exclusively in document pdf formats in Philadelphia's court websites. Documents (docketed statements and summaries) are searchable by limited search fields, or listed as as a limited number of most recent cases.
+source: https://www.ncsc.org/topics/access-and-fairness/privacy-public-access-to-court-records/state-links3#Pennsylvania
+
+I reviewed the published statistics available, but there was insufficient information available there to tie even # of cases to LLC defendents. Wildcard searches 
+3,596 docketed cases of Premise Liability were recorded in PA in 2019, within the general Tort category second only to motor vehicle case type. 
+source1: http://www.pacourts.us/assets/files/setting-7803/file-10537.pdf?cb=bb47d4 p.4
+source: http://www.pacourts.us/news-and-statistics/research-and-statistics/
+
+I searched Philadelphia's Civil Court Cases, but encountered bugs in their website and was unable to advance from the first to second page of search results for a wildcard %LLC search which was somewhat successful in finding at least some results validated from page 1 that were slip and fall cases with LLC in the org name. The information that could be scraped from a table format in the page results was limited however and did not indicate the Case Type which would indicate Premise Liability, and in order to filter for that type, it would require clicking into individual result page summaries.
+source1: https://fjdefile.phila.gov/efsfjd/zk_fjd_public_qry_01.zp_personcase_details_idx
+source: https://www.courts.phila.gov/casesearch/
+
+I managed to find a way to get a sizable amount of LLC search results for claims from The Philadelphia Courts First Judicial District of Pennsylvania.
+Organization Name = %LLC 
+Case Type SC - Statement of Claims
+Upon detailed inspection of several results, understanding nature of claim requires opening initial claim transaction document attached to record, e.g. to see it's owed rental security deposit, unpaid condo fees, etc. so the nature of the claim is not easy to distinguish in a readable structured data format.
+
+To get a comparative dataset for claims outside LLC Defendents for same time period (or any), I ran a search with "%" wildcard character in the required on Name/Org Name field, and returned the max 10,000 values alotted in fjd's html code for the search.do data source search results.
+source: https://fjdclaims.phila.gov/phmuni/cms/search.do
+
+```{r claim statements}
+
+#source()
+
+#claim_statements <- 
+
+#summary(claim_statements)
+```
+
+### Property and Casualty Insurance
+I searched for freely available insurance data and found a lead on statista.com, but some of their data access is paid by subscription: https://www.statista.com/topics/2832/property-and-casualty-insurance-in-the-united-states/
+I cannot find another public dataset related to claims or insurance rates/coverage to tie to liability.
+Possibly certain commercial mortgage lenders may require certain levels of insurance, which may be a topic for further research.
+
+---
+**bold**
+
+## Analysis
+
+## LLC Owned Property Deeds
+
+
+```{r Establish deeds_LLC}
+
+## Deeds transferred to an LLC indicating ownership; PA requires an LLC to include a designator in its legal organization name.
+
+# Combine filter (dplr) and grepl (base R) to get all deeds where grantee (i.e. new property owner/buyer) has an LLC designator in its name.
+?filter
+?grepl
+
+# The following code was commented out after the global function for LLC_identifier was used instead (moved to above section)
+# Paste was added to collapse the pattern argument of LLC_designator from multiple elements to match into a single element with pipe "|" delimited values because grepl only uses the first element.
+# Addition of paste debugged the error "argument 'pattern' has length > 1 and only the first element will be used" which was received when trying to pass the named variable pattern through grepl alone.
+# Commenting out this direct pattern match in lieu of using the LLC_identifier function I've created below. Exclusion of Partnerships and Corporations was also added to the filter after this basic code.
+# deeds_LLC <- filter(deeds,
+#                     grepl(paste(LLC_designator, collapse = "|"),
+#                           deeds$grantees, ignore.case = TRUE))
+
+
+```
+
+## Variance 
+
+
+```{r add column to deeds}
+
+# Commenting out code until it can be debugged to account for NA. The result is NA because at least one of the values is NA.
+# llc <- deeds$grantees_entity_type # TRUE where an LLC is a grantee on the deed
+# Sales_price <- deeds$cash_consideration # the most widely populates sales price value in the dataset
+# cov(llc, Sales_price, use = "everything",
+#     method = "pearson")
+
+```
+
+```{r plot variance deed sales prices and LLC ownership}
+
+# Commented code out until it can be debugged for error \/
+# deeds %>%
+#   ggplot(aes(x = as.numeric(grantees_entity_type), y = cash_consideration) + # Error: non-numeric argument to binary operator in this line of code
+#   geom_boxplot() +
+#   ggtitle("Covariance Real Estate Sales and LLC Ownership (Buyers)") +
+#   xlab("LLC Ownership if TRUE") +
+#   # Dollar
+#   scale_y_continuous(name = "Sale Price", labels = dollar)
+#   )
+```
+
+# Other Deeds Ownership
+
+Deed transfers to grantees: Individuals or other organization entity types
+
+```{r Establish deeds_LLC and deeds_other}
+
+## Deeds transferred to non-LLC owner entities
+deeds_other <- anti_join(deeds, deeds_LLC)
+  
+summary(deeds_other)
+glimpse(deeds_other)
+
+# Check the join by counting both table's rows and comparing that count to the entire deeds count. 
+deeds_total_count <- count(deeds_LLC) + count(deeds_other)
+print(deeds_total_count)
+deeds_total_count == count(deeds)
+  
+```
+
+# LLC Subsidiary LLC Ownership
+
+LLC Ownership recorded on LLC organization records (certification of organization entity with PA)
+This data was not available publicly in an open structured way.
+To find out who owns an LLC in PA you must sumbit a manual Right to Know request (one by one)
+
+```{r owners_LLC}
+
+# Use source() or read_csv() to get data file
+
+# Name variable for filtered data
+# owners_LLC <- 
+
+# summary(owners_LLC)
+```
+---
+
+## Objective 2 LLC Buyer Relationship to Market Rate
+
+
+# Calculate Market Value
+
+According to SFgate.com, "
+A property's fair market value defines what you could expect to receive if you were to sell it privately that day...
+Divide the average sale price by the average square footage to calculate the average value of all properties per square foot. Multiply this amount by the number of square feet in your home for a very accurate estimate of the fair market value of your home.
+"
+
+https://homeguides.sfgate.com/determine-fair-market-value-home-7935.html
+
+(Note this is considered a fairly direct and traditional approach to appraising property, and does not take into account improvments or other factors that may adjust the value of a property.
+For our purposes though I like the simplicity of this calculation.)
+
+According to Fannie Mae, here's another definition in lay terms, "
+Market value is the most probable price that a property should bring in a competitive and open market under all conditions requisite to a fair sale, the buyer and seller, each acting prudently, knowledgeably and assuming the price is not affected by undue stimulus.
+"
+
+```{r average sale price}
+# Philadelphia city/county population of deeds 1999 to 2020
+# Let's try this by median and mean for comparison
+# Note there is a "fair_market_value" variable provided in the table, but I will calculate my own for analysis and learning purposes; can compare those later.
+
+summary(deeds)
+glimpse(deeds)
+
+# calculate the sum of missing values in deeds: 384 deeds with missing values
+sum(is.na(deeds$cash_consideration))
+
+# This still resulted in NA results for mean after running; replaced with na.rm = TRUE instead
+# na.omit(deeds)
+
+# calculate the mean sales price of the entire population of property transfers in Philly = $134,255 cash consideration per property 
+avg_sale_price_all_mean <- mean(deeds$cash_consideration / deeds$property_count, na.rm = TRUE)
+
+# We'll use this as avaerage sale price: calculate the median sales price, generally considered to be more accurate to use in real estate valuation, of the entire population of property transfers in Philly = $50,816 cash consideration per property deed
+avg_sale_price_all_med <- median(deeds$cash_consideration / deeds$property_count, na.rm = TRUE)
+
+# mean sales for LLC grantees/buyers for all years is = $228,955
+avg_sale_price_LLC_all_mean <- mean(deeds_LLC$cash_consideration / deeds_LLC$property_count, na.rm = TRUE)
+# median sales for LLC grantees/buyers for all years is $45,000
+avg_sale_price_LLC_all_med <- median(deeds_LLC$cash_consideration / deeds_LLC$property_count, na.rm = TRUE)
+print(avg_sale_price_LLC_all_med) 
+
+
+# Some other exploratory details
+# how many deeds have $0 cash consideration? Result is 18,137 $0 deeds
+sum(deeds$cash_consideration == 0, na.rm = TRUE)
+
+# how frequentlyis $1 the sale price as considered common practice to transfer between family members 'on the books' for free; result is 220,784 deeds
+sum(deeds$cash_consideration == 1, na.rm = TRUE)
+sum(deeds_LLC$cash_consideration == 1, na.rm = TRUE) # result is $1 sales only occur 13,198 time with LLC buyers, presumably for associated entities transferring deed for liability protection, i.e. owners of the LLC
+# It is much less frequent for LLC to be transferred a deed for $1 than the overall population.
+
+# consider for later possibility of removing $0 transaction records, but keep since these are common in real estate deeds.
+
+# see frequency of each distinct sale price; this would be better built to view as counts by sale price ranges later
+table(deeds$cash_consideration)
+
+# Another factor is that some deeds have multiple properties included (see property_count). Bundling may result in a lower price situation per property with adjoined properties sold together.
+# Median is 1 and mean of property count is 1.893014 with NA removed.
+# For all of the FMV and price calculations that follow, I've divided by the property count on the deed to result is per property, not per deed, results.
+median(deeds$property_count, na.rm = TRUE)
+mean(deeds$property_count, na.rm = TRUE)
+max(deeds$property_count, na.rm = TRUE) # max for all properties is 202; same as LLC table
+min(deeds$property_count, na.rm = TRUE) # 1, no zero values, with NA removed
+
+# and for LLC property count:
+median(deeds_LLC$property_count, na.rm = TRUE) # median for LLC is 1
+mean(deeds_LLC$property_count, na.rm = TRUE) # mean for LLC is 3.843236, indicating some LLC deeds with higher numbers of properties included in sale
+max(deeds_LLC$property_count, na.rm = TRUE) # max for LLC properties is 202
+
+# square footage is not available in this dataset, and requires linking to Office of Property Assessment records; an OPA_account number exists in this table, but has nulls, and so for now I will use the given fair_market_value in the table to test hypothesis
+
+## LLC buyer entity FMV
+# mean fair market value for LLC grantees/buyers $206,250
+avg_fmv_LLC_all_mean <- mean((deeds_LLC$fair_market_value / deeds_LLC$property_count), na.rm = TRUE)
+print(avg_fmv_LLC_all_mean)
+
+# median sales for LLC = $45,414
+avg_fmv_LLC_all_med <- median((deeds_LLC$fair_market_value / deeds_LLC$property_count), na.rm = TRUE)
+print(avg_fmv_LLC_all_med)
+
+## All Other buyer entities FMV = $108,665
+# mean fair market value for LLC grantees/buyers
+avg_fmv_other_all_mean <- mean((deeds_other$fair_market_value / deeds_other$property_count), na.rm = TRUE)
+print(avg_fmv_other_all_mean)
+
+# median sales for all non-LLC buyer entities (includes partnership types, corporations and individuals) = $46,789
+avg_fmv_other_all_med <- median((deeds_other$fair_market_value / deeds_other$property_count), na.rm = TRUE)
+print(avg_fmv_other_all_med)
+
+
+?label_dollar
+
+```
+
+## Build a Simple Model
+
+```{r FMV and Sale Price}
+
+options(na.action = na.warn)
+max(deeds_other$cash_consideration / deeds_other$property_count, na.rm = TRUE) # $400,003,936
+max(deeds_other$cash_consideration, na.rm = TRUE)
+
+# Check into the outlier with highest sales price; 
+# After a Google map search and street view, I can see it's a random small row home in an average neighborhood that is not anywhere near a remarkable value; indicates an error or something else strange.
+deeds %>% filter(cash_consideration == 400003936)
+
+# Check into the outlier with highest FMV
+# After a Google map search it's clear the sale price is for unit 118 in a senior community, and the FMV listed is actually for the entire housing property which is large and on the Delaware riverfront with many units. 
+max(deeds_other$fair_market_value / deeds_other$property_count, na.rm = TRUE) # $980,072,800
+deeds %>% filter(fair_market_value == 980072800)
+```
+
+
+# Let's plot FMV and Sales Price to see how they're related
+
+```{r ggplot FMV and Sales Price - Non-LLC Buyers}
+
+
+plot_NonLLC_Buyers <- ggplot(deeds_other, aes(x = deeds_other$calc_FMV, y = deeds_other$calc_sales_price)) +
+  geom_point() +
+  ggtitle("Non-LLC Buyers") +
+  scale_x_continuous(name = "FMV",labels = dollar) +
+  scale_y_continuous(name = "Sales Price", labels = dollar) +
+     theme(axis.text.x = element_text(angle = 45, hjust = 1))
+print(plot_NonLLC_Buyers)
+
+```
+
+```{r ggplot FMV and Sales Price - LLC Buyers}
+
+plot_LLC_Buyers <- ggplot(deeds_LLC, aes(x = deeds_LLC$calc_FMV, y = deeds_LLC$calc_sales_price)) +
+  geom_point() +
+  ggtitle("LLC Buyers") +
+  scale_x_continuous(name = "FMV",labels = dollar) +
+  scale_y_continuous(name = "Sales Price", labels = dollar) +
+   theme(axis.text.x = element_text(angle = 45, hjust = 1))
+print(plot_LLC_Buyers)
+
+
+```
+
+```{r ggplot side by side}
+
+# Place the two plots together horizontally
+
+grid.arrange(
+  plot_LLC_Buyers, 
+  plot_NonLLC_Buyers, 
+  nrow = 1,
+  top = "Philadelphia Fair Market Value (FMV) and Sales Prices 1999 - 2020",
+  bottom = textGrob(
+    "Data sourced from https://www.opendataphilly.org/",
+    gp = gpar(fontface = 3, fontsize = 9),
+    hjust = 1,
+    )
+)
+  
+?textGrob
+```
+
+
+## Identify the Outliers
+
+
+Bivariate approach to finding outliers
+
+```{r outliers bivariate approach}
+
+# Find the Outliers using a Bivariate approach with a box-plot
+# For continuous variable (convert to categorical if needed.)
+# boxplot(deeds$calc_FMV ~ deeds$calc_sales_price, data = deeds, main = "Boxplot for Sales Price (continuos var) vs FMV")
+
+```
+
+Univariate approach to finding outliers in Non-LLC Deeds
+
+```{r outliers univariate approach - calc_FMV Non-LLC}
+
+# Identify outliers with a univariate approach: FMV calculated per property
+deeds_other_outliers_FMV <- boxplot.stats(deeds_other$calc_FMV)$out  # outlier values.
+boxplot(deeds_other$calc_FMV, main = "Fair Market Values of Non-LLC Property Buyers for Outliers", boxwex = 0.1)
+mtext(paste("Outliers: ", paste(deeds_other_outliers_FMV, collapse = ", ")), cex = 0.6)
+```
+
+```{r outliers univariate approach - calc_sales_price Non-LLC}
+
+# Identify outliers with a univariate approach: Sales Price calculated per property
+deeds_other_outliers_Sales_Price <- boxplot.stats(deeds_other$calc_sales_price)$out  # outlier values.
+boxplot(deeds_other$calc_sales_price, main = "Sales Prices of Non-LLC Property Buyers for Outliers", boxwex = 0.1)
+mtext(paste("Outliers: ", paste(deeds_other_outliers_Sales_Price, collapse = ", ")), cex = 0.6)
+
+```
+Univariate approach to finding outliers in LLC Deeds
+
+```{r outliers univariate approach - calc_FMV LLC}
+
+# Identify outliers with a univariate approach: FMV calculated per property
+deeds_LLC_outliers_FMV <- boxplot.stats(deeds_LLC$calc_FMV)$out  # outlier values.
+boxplot(deeds_LLC$calc_FMV, main = "Fair Market Values of LLC Property Buyers for Outliers", boxwex = 0.1)
+mtext(paste("Outliers: ", paste(deeds_LLC_outliers_FMV, collapse = ", ")), cex = 0.6)
+```
+
+```{r outliers univariate approach - calc_sales_price LLC}
+
+# Identify outliers with a univariate approach: Sales Price calculated per property
+deeds_LLC_outliers_Sales_Price <- boxplot.stats(deeds_LLC$calc_sales_price)$out  # outlier values.
+boxplot(deeds_LLC$calc_sales_price, main = "Sales Prices of LLC Property Buyers for Outliers", boxwex = 0.1)
+mtext(paste("Outliers: ", paste(deeds_LLC_outliers_Sales_Price, collapse = ", ")), cex = 0.6)
+
+```
+
+# Capping Outliers
+
+For missing values that lie outside the 1.5 * IQR limits, we could cap it by replacing those observations outside the lower limit with the value of 5th %ile and those that lie above the upper limit, with the value of 95th %ile. Below is a sample code that achieves this.
+
+source: http://r-statistics.co/Outlier-Treatment-With-R.html
+
+```{r outliers capping}
+## Capping
+
+# calc_FMV in deeds_other
+x <- deeds_other$fair_market_value
+qnt <- quantile(x, probs = c(.25, .75), na.rm = T)
+caps <- quantile(x, probs = c(.05, .95), na.rm = T)
+H <- 1.5 * IQR(x, na.rm = T)
+x[x < (qnt[1] - H)] <- caps[1]
+x[x > (qnt[2] + H)] <- caps[2]
+
+# calc_sales_price  in deeds_other
+x1 <- deeds_other$cash_consideration
+qnt1 <- quantile(x1, probs = c(.25, .75), na.rm = T)
+caps1 <- quantile(x1, probs = c(.05, .95), na.rm = T)
+H1 <- 1.5 * IQR(x, na.rm = T)
+x1[x1 < (qnt[1] - H)] <- caps[1]
+x1[x1 > (qnt[2] + H)] <- caps[2]
+
+# calc_FMV in deeds_LLC
+x2 <- deeds_LLC$fair_market_value
+qnt2 <- quantile(x2, probs = c(.25, .75), na.rm = T)
+caps2 <- quantile(x2, probs = c(.05, .95), na.rm = T)
+H2 <- 1.5 * IQR(x, na.rm = T)
+x2[x2 < (qnt[1] - H)] <- caps[1]
+x2[x2 > (qnt[2] + H)] <- caps[2]
+
+# calc_sales_price  in deeds_LLC
+x3 <- deeds_LLC$cash_consideration
+qnt3 <- quantile(x3, probs = c(.25, .75), na.rm = T)
+caps3 <- quantile(x3, probs = c(.05, .95), na.rm = T)
+H3 <- 1.5 * IQR(x, na.rm = T)
+x3[x3 < (qnt[1] - H)] <- caps[1]
+x3[x3 > (qnt[2] + H)] <- caps[2]
+
+# Let's refresh our calculated fields now.
+deeds$calc_sales_price <- deeds$cash_consideration / deeds$property_count
+deeds$calc_FMV <- deeds$fair_market_value / deeds$property_count
+
+```
+
+## Test Hypothesis: An LLC property buyer is more likely to pay below market value as compared to another type of buyer such as an individual or non-LLC partnership.
+
+
+Determine if the null is proved.
+
+# Objective 2 Stretch Goal
+
+Calculate a LTV loan to value percentage ratio and create its function. May need to use sale price or value in deed transaction for value if another value is not accessible.
+
+
+

@@ -4,7 +4,8 @@ Statistical analysis on real estate, business and housing topics with focus in P
 View repository as a GitHub Page at https://data-design-dimension.github.io/real-estate-stats/
 
 
-##Does the presence of local banks affect home mortgages?
+## Does the presence of local banks affect home mortgages?
+Under construction...
 
 There is a long history of financial institutions as actors in the de jure segregation of United States history. Read this article for a short primer on that background: https://www.smithsonianmag.com/history/how-federal-government-intentionally-racially-segregated-american-cities-180963494/
 
@@ -18,7 +19,17 @@ Data sources include predominantly:
 Direct URL addresses for specific datasets used are in the R Markdown file(s).
 
 
-##Fair Market Value and LLC Ownership Analysis project
+
+
+## Finding Contiguous Properties project
+Under construction...
+
+For the use case of identifying adjacent properties suitable for owner-occupied income producing home ownership under Veterans Administration mortgage funding, the neighbors.py file is being used as permitted under copyright by Ujaval Gandhi.
+
+
+
+
+## Fair Market Value and LLC Ownership Analysis project
 
 <img src="images/ggplot FMV sidebyside Sales Price - Non-LLC Buyers-1.png">
 
@@ -30,7 +41,9 @@ You may wish to open this project directly in RStudio with file /Kathryn_Hurchla
 Some script is commented out relating to PostgreSQL API connections. 
 You may either modify those chunks to directly query the API from the script, or query the API separately to save a file to run the script on.
 
----
+
+
+
 General Disclaimer: This research is completed by individuals and is not a reflection in any way of the City of Philadelphia departments or its affiliates.
 
 <a href="https://www.buymeacoffee.com/earthtokathy" target="_blank"><img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" alt="Buy Me A Coffee" style="height: 41px !important;width: 174px !important;box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;-webkit-box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;" ></a>

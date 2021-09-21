@@ -18,7 +18,7 @@ Data sources include predominantly:
 
 Direct URL addresses for specific datasets used are in the R Markdown file(s).
 
-
+For this analysis, I found that it was challenging to link data from the FDIC of local banks and branch locations with the data of the mortgage disclosures, due to varying location references. I was unable to do this down to a meaningful neighbor or census tract level to the extent where I would expect to see a degree of change within urban areas.
 
 
 ## Finding Contiguous Properties project
@@ -31,7 +31,7 @@ For the use case of identifying adjacent properties suitable for owner-occupied 
 
 ## Fair Market Value and LLC Ownership Analysis project
 
-<img src="/images/ggplot FMV sidebyside Sales Price - Non-LLC Buyers-1.png">
+<img src="/images/ggplot FMV sidebyside Sales Price - Non-LLC Buyers-1.png" alt="graph of real estate sales prices by buyers that are an LLC entity beside a graph of the same for those buyers who are not an LLC entity">
 
 Data sources include OpenDataPhilly datasets available through https://datacatalog.urban.org/search/type/dataset
 Direct URL addresses for specific datasets used are in the Python Jupyter Notebook or R Markdown file(s).

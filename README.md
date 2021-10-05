@@ -1,11 +1,11 @@
 # Real Estate Statistics Analysis & Data Visualization
-Statistical analysis on real estate, business and housing topics with focus in Philadelphia, PA
+Statistical analysis on real estate, related business, and affordable housing topics. United States National scope with a periodic focus in Philadelphia, PA
 
 View repository as a GitHub Page at https://data-design-dimension.github.io/real-estate-stats/
 
 
 ## Does the presence of local banks affect home mortgages?
-Under construction...
+Deferred project (need input and data cleansing and preparation for bank locations dataset)...
 
 There is a long history of financial institutions as actors in the de jure segregation of United States history. Read this article for a short primer on that background: https://www.smithsonianmag.com/history/how-federal-government-intentionally-racially-segregated-american-cities-180963494/
 
@@ -31,7 +31,7 @@ For the use case of identifying adjacent properties suitable for owner-occupied 
 
 ## Fair Market Value and LLC Ownership Analysis project
 
-<img src="/images/ggplot FMV sidebyside Sales Price - Non-LLC Buyers-1.png" alt="graph of real estate sales prices by buyers that are an LLC entity beside a graph of the same for those buyers who are not an LLC entity">
+<img src="/output/ggplot_FMV_sidebyside_Sales_Price_-_Non-LLC_Buyers-1.png" alt="graph of real estate sales prices by buyers that are an LLC entity beside a graph of the same for those buyers who are not an LLC entity">
 
 Data sources include OpenDataPhilly datasets available through https://datacatalog.urban.org/search/type/dataset
 Direct URL addresses for specific datasets used are in the Python Jupyter Notebook or R Markdown file(s).
@@ -46,4 +46,8 @@ You may either modify those chunks to directly query the API from the script, or
 
 General Disclaimer: This research is completed by individuals and is not a reflection in any way of the City of Philadelphia departments or its affiliates.
 
-<a href="https://www.buymeacoffee.com/earthtokathy" target="_blank"><img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" alt="Buy Me A Coffee" style="height: 41px !important;width: 174px !important;box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;-webkit-box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;" ></a>
+<!-- my custom buy me and a mentee a tea button -->
+<a href="https://www.buymeacoffee.com/earthtokathy"><img src="https://img.buymeacoffee.com/button-api/?text=Fuel mentorship with tea&emoji=🍵&slug=earthtokathy&button_colour=ecd0df&font_colour=062D3F&font_family=Poppins&outline_colour=000000&coffee_colour=FFDD00"></a>
+
+<!-- standard buy me a coffee orange button for reference -->
+<!-- <a href="https://www.buymeacoffee.com/earthtokathy" target="_blank"><img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" alt="Buy Me A Coffee" style="height: 41px !important;width: 174px !important;box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;-webkit-box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;" ></a> -->

@@ -31,7 +31,7 @@ For the use case of identifying adjacent properties suitable for owner-occupied 
 
 ## Fair Market Value and LLC Ownership Analysis project
 
-<img src="/output/Data-Design-Dimension/real-estate-stats/blob/main/Images/ggplot-FMV-sidebyside-Sales-Price-Non-LLCBuyers-1.png" alt="graph of real estate sales prices by buyers that are an LLC entity beside a graph of the same for those buyers who are not an LLC entity">
+<img src="https://github.com/Data-Design-Dimension/real-estate-stats/blob/82cd85fdb378a14855aafe30f5878ee4de13d1fd/Images/ggplot%20FMV%20sidebyside%20Sales%20Price%20-%20Non-LLC%20Buyers-1.png" alt="graph of real estate sales prices by buyers that are an LLC entity beside a graph of the same for those buyers who are not an LLC entity">
 
 Data sources include OpenDataPhilly datasets available through https://datacatalog.urban.org/search/type/dataset
 Direct URL addresses for specific datasets used are in the Python Jupyter Notebook or R Markdown file(s).

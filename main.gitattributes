@@ -1,5 +1,7 @@
-# This explicit language identifier tested unsuccessfully before I added an explicit R '.R' file to repository; keep this code here for reference only
-*.* linguist-language=R
+# make R Markdown detectable as a language indicator tag in GitHub repositories, in either .Rmd or fully lowercase .rmd extension format
+# per solution here: https://github.com/rstudio/rmarkdown-book/blob/ed81b894d5d2665d6ef4657c5840634512b97ff5/.gitattributes
+*.rmd  linguist-detectable
+*.Rmd  linguist-detectable
 
 # Common settings that generally should always be used with your language specific settings
 

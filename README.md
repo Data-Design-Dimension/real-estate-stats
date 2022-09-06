@@ -1,7 +1,7 @@
 # Real Estate Statistics Analysis & Data Visualization
 Statistical analysis on real estate, related business, and affordable housing topics. United States National scope with a periodic focus in Philadelphia, PA
 
-View repository as a GitHub Page at https://data-design-dimension.github.io/real-estate-stats/
+View the repository as a GitHub Page at https://data-design-dimension.github.io/real-estate-stats/
 
 
 ## Does the presence of local banks affect home mortgages?
@@ -9,7 +9,7 @@ Deferred project (need input and data cleansing and preparation for bank locatio
 
 There is a long history of financial institutions as actors in the de jure segregation of United States history. Read this article for a short primer on that background: https://www.smithsonianmag.com/history/how-federal-government-intentionally-racially-segregated-american-cities-180963494/
 
-Having personally lived in a neighborhood which has welcomed its first bank after lacking one for over 30 years, during which time I gradually moved my accounts to online only banks, I've wondered what affect does a local brick and mortal establishment have today on home mortgage lending, if any, and is it any more equitable?
+Having personally lived in a neighborhood that has welcomed its first bank after lacking one for over 30 years, during which time I gradually moved my accounts to online-only banks, I've wondered what effect a local brick-and-mortar establishment has today on home mortgage lending, if any, and is it any more equitable?
 
 Data sources include predominantly:
 -Urban Institute datasets available through https://www.opendataphilly.org/
@@ -24,14 +24,14 @@ For this analysis, I found that it was challenging to link data from the FDIC of
 ## Finding Contiguous Properties project
 Under construction...
 
-For the use case of identifying adjacent properties suitable for owner-occupied income producing home ownership under Veterans Administration mortgage funding, the neighbors.py file is being used as permitted under copyright by Ujaval Gandhi.
+For the use case of identifying adjacent properties suitable for owner-occupied income-producing home ownership under Veterans Administration mortgage funding, the neighbors.py file is being used as permitted under copyright by Ujaval Gandhi.
 
 
 
 
 ## Fair Market Value and LLC Ownership Analysis project
 
-<img src="/output/ggplot_FMV_sidebyside_Sales_Price_-_Non-LLC_Buyers-1.png" alt="graph of real estate sales prices by buyers that are an LLC entity beside a graph of the same for those buyers who are not an LLC entity">
+<img src="/output/ggplot_FMV_sidebyside_Sales_Price_-_Non-LLC_Buyers-1.png" alt="graph of real estate sales prices by buyers that are an LLC entity besides a graph of the same for those buyers who are not a LLC entity">
 
 Data sources include OpenDataPhilly datasets available through https://datacatalog.urban.org/search/type/dataset
 Direct URL addresses for specific datasets used are in the Python Jupyter Notebook or R Markdown file(s).
@@ -39,7 +39,7 @@ Direct URL addresses for specific datasets used are in the Python Jupyter Notebo
 You may wish to open this project directly in RStudio with file /Kathryn_Hurchla_FMV_and_LLC_project.Rproj
 
 Some script is commented out relating to PostgreSQL API connections. 
-You may either modify those chunks to directly query the API from the script, or query the API separately to save a file to run the script on.
+You may either modify those chunks to directly query the API from the script or query the API separately to save a file to run the script on.
 
 
 
